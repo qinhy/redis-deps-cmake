@@ -105,8 +105,10 @@
 
 #define _DEFAULT_SOURCE /* For fchmod() */
 #define _BSD_SOURCE     /* For fchmod() */
-#include <termios.h>
-#include <unistd.h>
+// #include <termios.h>
+// #include "asio.hpp"
+// #include <unistd.h>
+#define STDIN_FILENO 0
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
@@ -115,8 +117,7 @@
 #include <ctype.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <sys/ioctl.h>
-#include <unistd.h>
+// #include <sys/ioctl.h>
 #include <assert.h>
 #include "linenoise.h"
 
@@ -127,7 +128,7 @@ static linenoiseCompletionCallback *completionCallback = NULL;
 static linenoiseHintsCallback *hintsCallback = NULL;
 static linenoiseFreeHintsCallback *freeHintsCallback = NULL;
 
-static struct termios orig_termios; /* In order to restore at exit.*/
+// static struct termios orig_termios; /* In order to restore at exit.*/
 static int maskmode = 0; /* Show "***" instead of input. For passwords. */
 static int rawmode = 0; /* For atexit() function to check if restore is needed*/
 static int mlmode = 0;  /* Multi line mode. Default is single line. */
@@ -302,44 +303,44 @@ static int enableRawMode(int fd) {
         return 0;
     }
 
-    struct termios raw;
+//     struct termios raw;
 
-    if (!isatty(STDIN_FILENO)) goto fatal;
-    if (!atexit_registered) {
-        atexit(linenoiseAtExit);
-        atexit_registered = 1;
-    }
-    if (tcgetattr(fd,&orig_termios) == -1) goto fatal;
+//     if (!isatty(STDIN_FILENO)) goto fatal;
+//     if (!atexit_registered) {
+//         atexit(linenoiseAtExit);
+//         atexit_registered = 1;
+//     }
+//     if (tcgetattr(fd,&orig_termios) == -1) goto fatal;
 
-    raw = orig_termios;  /* modify the original mode */
-    /* input modes: no break, no CR to NL, no parity check, no strip char,
-     * no start/stop output control. */
-    raw.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
-    /* output modes - disable post processing */
-    raw.c_oflag &= ~(OPOST);
-    /* control modes - set 8 bit chars */
-    raw.c_cflag |= (CS8);
-    /* local modes - choing off, canonical off, no extended functions,
-     * no signal chars (^Z,^C) */
-    raw.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG);
-    /* control chars - set return condition: min number of bytes and timer.
-     * We want read to return every single byte, without timeout. */
-    raw.c_cc[VMIN] = 1; raw.c_cc[VTIME] = 0; /* 1 byte, no timer */
+//     raw = orig_termios;  /* modify the original mode */
+//     /* input modes: no break, no CR to NL, no parity check, no strip char,
+//      * no start/stop output control. */
+//     raw.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
+//     /* output modes - disable post processing */
+//     raw.c_oflag &= ~(OPOST);
+//     /* control modes - set 8 bit chars */
+//     raw.c_cflag |= (CS8);
+//     /* local modes - choing off, canonical off, no extended functions,
+//      * no signal chars (^Z,^C) */
+//     raw.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG);
+//     /* control chars - set return condition: min number of bytes and timer.
+//      * We want read to return every single byte, without timeout. */
+//     raw.c_cc[VMIN] = 1; raw.c_cc[VTIME] = 0; /* 1 byte, no timer */
 
-    /* put terminal in raw mode */
-    if (tcsetattr(fd,TCSANOW,&raw) < 0) goto fatal;
-    rawmode = 1;
-    return 0;
+//     /* put terminal in raw mode */
+//     if (tcsetattr(fd,TCSANOW,&raw) < 0) goto fatal;
+//     rawmode = 1;
+//     return 0;
 
-fatal:
-    errno = ENOTTY;
+// fatal:
+//     errno = ENOTTY;
     return -1;
 }
 
 static void disableRawMode(int fd) {
     /* Don't even check the return value as it's too late. */
-    if (rawmode && tcsetattr(fd,TCSANOW,&orig_termios) != -1)
-        rawmode = 0;
+    // if (rawmode && tcsetattr(fd,TCSANOW,&orig_termios) != -1)
+    //     rawmode = 0;
 }
 
 /* Use the ESC [6n escape sequence to query the horizontal cursor position

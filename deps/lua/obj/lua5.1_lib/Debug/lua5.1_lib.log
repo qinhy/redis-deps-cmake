@@ -1,0 +1,39 @@
+﻿C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\MSBuild\Microsoft\VC\v160\Microsoft.CppCommon.targets(39,5): warning MSB4211: プロパティ "IntermediateOutputPath" は初めて値に設定されますが、これは "C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\MSBuild\Microsoft\VC\v160\Microsoft.CppCommon.targets (38,5)" で既に使用されています。
+C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\MSBuild\Microsoft\VC\v160\Microsoft.BuildSteps.Targets(30,5): warning MSB4211: プロパティ "DebugType" は初めて値に設定されますが、これは "C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\MSBuild\Microsoft\VC\v160\Microsoft.BuildSteps.Targets (29,5)" で既に使用されています。
+C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets(373,5): warning MSB4211: プロパティ "CleanFile" は初めて値に設定されますが、これは "C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\MSBuild\Microsoft\VC\v160\Microsoft.CppCommon.targets (38,5)" で既に使用されています。
+cl : コマンド ライン warning D9035: オプション 'Gm' の使用は現在推奨されていません。今後のバージョンからは削除されます。
+  lzio.c
+  lvm.c
+  lundump.c
+  ltm.c
+  ltablib.c
+  ltable.c
+  lstrlib.c
+  lstring.c
+  lstate.c
+  lparser.c
+  loslib.c
+  lopcodes.c
+  lobject.c
+  loadlib.c
+  lmem.c
+  lmathlib.c
+  llex.c
+  liolib.c
+  linit.c
+  lgc.c
+  コードを生成中...
+  コンパイル中...
+  lfunc.c
+  ldump.c
+  ldo.c
+  ldebug.c
+  ldblib.c
+  lcode.c
+  lbaselib.c
+  lauxlib.c
+  lapi.c
+  コードを生成中...
+C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\MSBuild\Microsoft\VC\v160\Microsoft.CppBuild.targets(1545,5): warning MSB8012: TargetPath(D:\github\redis\deps\lua\lib\static\lua5.1_lib.lib) が Library の OutputFile プロパティ値 (D:\github\redis\deps\lua\lib\static\lua5.1.lib) と一致しません。このため、プロジェクトが正常にビルドされない可能性があります。この問題を解決するには、$(OutDir)、$(TargetName)、および $(TargetExt) の各プロパティ値が、%(Lib.OutputFile) で指定されている値と一致することを確認してください。
+C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\MSBuild\Microsoft\VC\v160\Microsoft.CppBuild.targets(1547,5): warning MSB8012: TargetName(lua5.1_lib) が Library の OutputFile プロパティ値 (lua5.1) と一致しません。このため、プロジェクトが正常にビルドされない可能性があります。この問題を解決するには、$(OutDir)、$(TargetName)、および $(TargetExt) の各プロパティ値が、%(Lib.OutputFile) で指定されている値と一致することを確認してください。
+  lua5.1_lib.vcxproj -> D:\github\redis\deps\lua\lib\static\lua5.1_lib.lib

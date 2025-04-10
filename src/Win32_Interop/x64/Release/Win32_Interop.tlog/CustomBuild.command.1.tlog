@@ -1,0 +1,5 @@
+^D:\DL\REDIS-DEVELOP\SRC\WIN32_INTEROP\EVENTLOG.MC
+md resources
+mc.exe -A -b -c -h . -r resources EventLog.mc
+rc.exe -foresources/EventLog.res resources/EventLog.rc
+link.exe -dll -noentry resources/EventLog.res -out:D:\DL\redis-develop\msvs\x64\Release\EventLog.dll

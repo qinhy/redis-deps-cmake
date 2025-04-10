@@ -32,11 +32,27 @@
  */
 
 #define REDISMODULE_EXPERIMENTAL_API
+/* Add type definition for mstime_t on Windows */
+#ifdef _WIN32
+typedef long long mstime_t;
+#endif
+#include "../Win32_Interop/win32_types_hiredis.h"
 #include "../redismodule.h"
 #include <stdio.h>
 #include <stdlib.h>
+
+#ifdef _WIN32
+#include "../Win32_Interop/Win32_PThread.h"
+#include <windows.h>
+#define sleep(x) Sleep((x)*1000)
+#else
 #include <pthread.h>
 #include <unistd.h>
+#endif
+
+#ifndef REDISMODULE_CORE
+typedef PORT_LONGLONG mstime_t;
+#endif
 
 /* Reply callback for blocking command HELLO.BLOCK */
 int HelloBlock_Reply(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {

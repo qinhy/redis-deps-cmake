@@ -6,6 +6,8 @@ project(linenoise)
 
 set(CMAKE_BINARY_DIR "${CMAKE_SOURCE_DIR}/build")
 
+option(BUILD_EXAMPLE "Build the example program" OFF)
+
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release CACHE string "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel." FORCE)
 endif()
@@ -90,15 +92,17 @@ install(TARGETS linenoise DESTINATION lib)
 install(FILES include/linenoise.h DESTINATION include)
 
 # build example
-add_executable(
-  example
-  tst/example.c
-)
+if(BUILD_EXAMPLE)
+  add_executable(
+    example
+    tst/example.c
+  )
 
-target_link_libraries(
-  example
-  linenoise
-)
+  target_link_libraries(
+    example
+    linenoise
+  )
+endif()
 
 # packaging
 include(CPack)

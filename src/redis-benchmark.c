@@ -34,6 +34,7 @@
 #include "Win32_Interop/Win32_Signal_Process.h"
 #include "Win32_Interop/Win32_Time.h"
 #include "Win32_Interop/Win32_Error.h"
+#include "Win32_Interop/Win32_APIs.h"
 #include "Win32_Interop/win32fixes.h"
 #include "Win32_Interop/Win32_PThread.h"
 #endif
@@ -53,9 +54,9 @@ POSIX_ONLY(#include <sys/time.h>)
 #include <sds.h> /* Use hiredis sds. */
 #include "ae.h"
 #include "hiredis.h"
-#ifdef _WIN32
-#include "win32_hiredis.h"
-#endif
+// #ifdef _WIN32
+// #include "win32_hiredis.h"
+// #endif
 #include "adlist.h"
 #include "zmalloc.h"
 
@@ -227,21 +228,22 @@ static void readHandler(aeEventLoop *el, int fd, void *privdata, int mask) {
      * is not part of the latency, so calculate it only once, here. */
     if (c->latency < 0) c->latency = ustime()-(c->start);
 
-#ifdef _WIN32
-    nread = read(c->context->fd,buf,sizeof(buf));
-    if (nread == -1) {
-        if ((errno == ENOENT) || (errno == WSAEWOULDBLOCK)) {
-            errno = EAGAIN;
-            WSIOCP_QueueNextRead((int) c->context->fd);
-            return;
-        } else {
-            fprintf(stderr,"Error: %s\n",c->context->errstr);
-            exit(1);
-        }
-    } else if (redisBufferReadDone(c->context, buf, nread) != REDIS_OK) {
-#else
+// #ifdef _WIN32
+//     nread = read(c->context->fd,buf,sizeof(buf));
+//     if (nread == -1) {
+//         if ((errno == ENOENT) || (errno == WSAEWOULDBLOCK)) {
+//             errno = EAGAIN;
+//             WSIOCP_QueueNextRead((int) c->context->fd);
+//             return;
+//         } else {
+//             fprintf(stderr,"Error: %s\n",c->context->errstr);
+//             exit(1);
+//         }
+//     } else if (redisBufferReadDone(c->context, buf, nread) != REDIS_OK) {
+// #else
+//     if (redisBufferRead(c->context) != REDIS_OK) {
+// #endif
     if (redisBufferRead(c->context) != REDIS_OK) {
-#endif
         fprintf(stderr,"Error: %s\n",c->context->errstr);
         exit(1);
     } else {
@@ -391,16 +393,17 @@ static client createClient(char *cmd, size_t len, client from) {
     client c = zmalloc(sizeof(struct _client));
 
     if (config.hostsocket == NULL) {
-#ifdef _WIN32
-        SOCKADDR_STORAGE ss;
-        c->context = redisPreConnectNonBlock(config.hostip,config.hostport, &ss);
-        if (WSIOCP_SocketConnect(c->context->fd, &ss) != 0) {
-            c->context->err = errno;
-            strerror_r(errno,c->context->errstr,sizeof(c->context->errstr));
-        }
-#else
-        c->context = redisConnectNonBlock(config.hostip,config.hostport);
-#endif
+// #ifdef _WIN32
+//         SOCKADDR_STORAGE ss;
+//         c->context = redisPreConnectNonBlock(config.hostip,config.hostport, &ss);
+//         if (WSIOCP_SocketConnect(c->context->fd, &ss) != 0) {
+//             c->context->err = errno;
+//             strerror_r(errno,c->context->errstr,sizeof(c->context->errstr));
+//         }
+// #else
+//         c->context = redisConnectNonBlock(config.hostip,config.hostport);
+// #endif
+    c->context = redisConnectNonBlock(config.hostip,config.hostport);
     } else {
         c->context = redisConnectUnixNonBlock(config.hostsocket);
     }

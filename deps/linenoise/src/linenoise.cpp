@@ -3451,7 +3451,9 @@ int linenoiseInstallWindowChangeHandler(void) {
 #endif
   return 0;
 }
-
+void linenoiseFree(void *ptr) {
+    free(ptr);
+}
 int linenoiseKeyType(void) {
   return keyType;
 }

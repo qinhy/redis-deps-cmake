@@ -383,7 +383,11 @@ int REDISMODULE_API_FUNC(RedisModule_CommandFilterArgDelete)(RedisModuleCommandF
 #endif
 
 /* This is included inline inside each Redis module. */
+#ifdef _MSC_VER
+static int RedisModule_Init(RedisModuleCtx *ctx, const char *name, int ver, int apiver);
+#else
 static int RedisModule_Init(RedisModuleCtx *ctx, const char *name, int ver, int apiver) __attribute__((unused));
+#endif
 static int RedisModule_Init(RedisModuleCtx *ctx, const char *name, int ver, int apiver) {
     void *getapifuncptr = ((void**)ctx)[0];
     RedisModule_GetApi = (int (*)(const char *, void *)) (PORT_ULONG)getapifuncptr;

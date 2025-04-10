@@ -31,6 +31,7 @@
  */
 
 #define REDISMODULE_EXPERIMENTAL_API
+#include "../Win32_Interop/win32_types_hiredis.h"
 #include "../redismodule.h"
 #include <stdio.h>
 #include <stdlib.h>

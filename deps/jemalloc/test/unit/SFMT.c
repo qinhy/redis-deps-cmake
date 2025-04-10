@@ -35,10 +35,10 @@
  */
 #include "test/jemalloc_test.h"
 
-#define BLOCK_SIZE 10000
-#define BLOCK_SIZE64 (BLOCK_SIZE / 2)
-#define COUNT_1 1000
-#define COUNT_2 700
+#define	BLOCK_SIZE 10000
+#define	BLOCK_SIZE64 (BLOCK_SIZE / 2)
+#define	COUNT_1 1000
+#define	COUNT_2 700
 
 static const uint32_t init_gen_rand_32_expected[] = {
 	3440181298U, 1564997079U, 1510669302U, 2930277156U, 1452439940U,
@@ -1449,14 +1449,15 @@ static const uint64_t init_by_array_64_expected[] = {
 	KQU(15570163926716513029), KQU(13356980519185762498)
 };
 
-TEST_BEGIN(test_gen_rand_32) {
+TEST_BEGIN(test_gen_rand_32)
+{
 	uint32_t array32[BLOCK_SIZE] JEMALLOC_ATTR(aligned(16));
 	uint32_t array32_2[BLOCK_SIZE] JEMALLOC_ATTR(aligned(16));
 	int i;
 	uint32_t r32;
 	sfmt_t *ctx;
 
-	expect_d_le(get_min_array_size32(), BLOCK_SIZE,
+	assert_d_le(get_min_array_size32(), BLOCK_SIZE,
 	    "Array size too small");
 	ctx = init_gen_rand(1234);
 	fill_array32(ctx, array32, BLOCK_SIZE);
@@ -1466,16 +1467,16 @@ TEST_BEGIN(test_gen_rand_32) {
 	ctx = init_gen_rand(1234);
 	for (i = 0; i < BLOCK_SIZE; i++) {
 		if (i < COUNT_1) {
-			expect_u32_eq(array32[i], init_gen_rand_32_expected[i],
+			assert_u32_eq(array32[i], init_gen_rand_32_expected[i],
 			    "Output mismatch for i=%d", i);
 		}
 		r32 = gen_rand32(ctx);
-		expect_u32_eq(r32, array32[i],
+		assert_u32_eq(r32, array32[i],
 		    "Mismatch at array32[%d]=%x, gen=%x", i, array32[i], r32);
 	}
 	for (i = 0; i < COUNT_2; i++) {
 		r32 = gen_rand32(ctx);
-		expect_u32_eq(r32, array32_2[i],
+		assert_u32_eq(r32, array32_2[i],
 		    "Mismatch at array32_2[%d]=%x, gen=%x", i, array32_2[i],
 		    r32);
 	}
@@ -1483,7 +1484,8 @@ TEST_BEGIN(test_gen_rand_32) {
 }
 TEST_END
 
-TEST_BEGIN(test_by_array_32) {
+TEST_BEGIN(test_by_array_32)
+{
 	uint32_t array32[BLOCK_SIZE] JEMALLOC_ATTR(aligned(16));
 	uint32_t array32_2[BLOCK_SIZE] JEMALLOC_ATTR(aligned(16));
 	int i;
@@ -1491,7 +1493,7 @@ TEST_BEGIN(test_by_array_32) {
 	uint32_t r32;
 	sfmt_t *ctx;
 
-	expect_d_le(get_min_array_size32(), BLOCK_SIZE,
+	assert_d_le(get_min_array_size32(), BLOCK_SIZE,
 	    "Array size too small");
 	ctx = init_by_array(ini, 4);
 	fill_array32(ctx, array32, BLOCK_SIZE);
@@ -1501,16 +1503,16 @@ TEST_BEGIN(test_by_array_32) {
 	ctx = init_by_array(ini, 4);
 	for (i = 0; i < BLOCK_SIZE; i++) {
 		if (i < COUNT_1) {
-			expect_u32_eq(array32[i], init_by_array_32_expected[i],
+			assert_u32_eq(array32[i], init_by_array_32_expected[i],
 			    "Output mismatch for i=%d", i);
 		}
 		r32 = gen_rand32(ctx);
-		expect_u32_eq(r32, array32[i],
+		assert_u32_eq(r32, array32[i],
 		    "Mismatch at array32[%d]=%x, gen=%x", i, array32[i], r32);
 	}
 	for (i = 0; i < COUNT_2; i++) {
 		r32 = gen_rand32(ctx);
-		expect_u32_eq(r32, array32_2[i],
+		assert_u32_eq(r32, array32_2[i],
 		    "Mismatch at array32_2[%d]=%x, gen=%x", i, array32_2[i],
 		    r32);
 	}
@@ -1518,14 +1520,15 @@ TEST_BEGIN(test_by_array_32) {
 }
 TEST_END
 
-TEST_BEGIN(test_gen_rand_64) {
+TEST_BEGIN(test_gen_rand_64)
+{
 	uint64_t array64[BLOCK_SIZE64] JEMALLOC_ATTR(aligned(16));
 	uint64_t array64_2[BLOCK_SIZE64] JEMALLOC_ATTR(aligned(16));
 	int i;
 	uint64_t r;
 	sfmt_t *ctx;
 
-	expect_d_le(get_min_array_size64(), BLOCK_SIZE64,
+	assert_d_le(get_min_array_size64(), BLOCK_SIZE64,
 	    "Array size too small");
 	ctx = init_gen_rand(4321);
 	fill_array64(ctx, array64, BLOCK_SIZE64);
@@ -1535,17 +1538,17 @@ TEST_BEGIN(test_gen_rand_64) {
 	ctx = init_gen_rand(4321);
 	for (i = 0; i < BLOCK_SIZE64; i++) {
 		if (i < COUNT_1) {
-			expect_u64_eq(array64[i], init_gen_rand_64_expected[i],
+			assert_u64_eq(array64[i], init_gen_rand_64_expected[i],
 			    "Output mismatch for i=%d", i);
 		}
 		r = gen_rand64(ctx);
-		expect_u64_eq(r, array64[i],
+		assert_u64_eq(r, array64[i],
 		    "Mismatch at array64[%d]=%"FMTx64", gen=%"FMTx64, i,
 		    array64[i], r);
 	}
 	for (i = 0; i < COUNT_2; i++) {
 		r = gen_rand64(ctx);
-		expect_u64_eq(r, array64_2[i],
+		assert_u64_eq(r, array64_2[i],
 		    "Mismatch at array64_2[%d]=%"FMTx64" gen=%"FMTx64"", i,
 		    array64_2[i], r);
 	}
@@ -1553,7 +1556,8 @@ TEST_BEGIN(test_gen_rand_64) {
 }
 TEST_END
 
-TEST_BEGIN(test_by_array_64) {
+TEST_BEGIN(test_by_array_64)
+{
 	uint64_t array64[BLOCK_SIZE64] JEMALLOC_ATTR(aligned(16));
 	uint64_t array64_2[BLOCK_SIZE64] JEMALLOC_ATTR(aligned(16));
 	int i;
@@ -1561,7 +1565,7 @@ TEST_BEGIN(test_by_array_64) {
 	uint32_t ini[] = {5, 4, 3, 2, 1};
 	sfmt_t *ctx;
 
-	expect_d_le(get_min_array_size64(), BLOCK_SIZE64,
+	assert_d_le(get_min_array_size64(), BLOCK_SIZE64,
 	    "Array size too small");
 	ctx = init_by_array(ini, 5);
 	fill_array64(ctx, array64, BLOCK_SIZE64);
@@ -1571,17 +1575,17 @@ TEST_BEGIN(test_by_array_64) {
 	ctx = init_by_array(ini, 5);
 	for (i = 0; i < BLOCK_SIZE64; i++) {
 		if (i < COUNT_1) {
-			expect_u64_eq(array64[i], init_by_array_64_expected[i],
+			assert_u64_eq(array64[i], init_by_array_64_expected[i],
 			    "Output mismatch for i=%d", i);
 		}
 		r = gen_rand64(ctx);
-		expect_u64_eq(r, array64[i],
+		assert_u64_eq(r, array64[i],
 		    "Mismatch at array64[%d]=%"FMTx64" gen=%"FMTx64, i,
 		    array64[i], r);
 	}
 	for (i = 0; i < COUNT_2; i++) {
 		r = gen_rand64(ctx);
-		expect_u64_eq(r, array64_2[i],
+		assert_u64_eq(r, array64_2[i],
 		    "Mismatch at array64_2[%d]=%"FMTx64" gen=%"FMTx64, i,
 		    array64_2[i], r);
 	}
@@ -1590,10 +1594,12 @@ TEST_BEGIN(test_by_array_64) {
 TEST_END
 
 int
-main(void) {
-	return test(
+main(void)
+{
+
+	return (test(
 	    test_gen_rand_32,
 	    test_by_array_32,
 	    test_gen_rand_64,
-	    test_by_array_64);
+	    test_by_array_64));
 }

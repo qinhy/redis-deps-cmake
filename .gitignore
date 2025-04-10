@@ -1,2 +1,5 @@
 
 build/
+/deps/lua/obj/
+/deps/lua/bin/
+/deps/lua/lib/

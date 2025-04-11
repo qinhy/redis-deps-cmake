@@ -21,10 +21,10 @@
 #
 
 # Currently this file only enables building on Windows and not Cygwin or MSYS
-cmake_minimum_required (VERSION 3.4 FATAL_ERROR)
+cmake_minimum_required(VERSION 4.0)
 
 # Set policy based on the CMake version
-cmake_policy(VERSION 3.4.3)
+cmake_policy(VERSION 4.0)
 
 if(POLICY CMP0042)
   cmake_policy(SET CMP0042 NEW)

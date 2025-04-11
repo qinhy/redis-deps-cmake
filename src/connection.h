@@ -13,7 +13,11 @@
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
+#ifdef _WIN32
+#include "win32_compat.h"
+#else
 #include <sys/uio.h>
+#endif
 
 #include "ae.h"
 

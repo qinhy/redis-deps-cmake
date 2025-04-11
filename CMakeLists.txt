@@ -21,9 +21,6 @@ endif()
 
 cmake_minimum_required(VERSION 4.0)
 
-# Set policy based on the CMake version
-cmake_policy(VERSION 3.4.3)
-
 if(POLICY CMP0042)
   cmake_policy(SET CMP0042 NEW)
 endif()

@@ -67,7 +67,13 @@ include(TestBigEndian)
 include (CheckCSourceCompiles)
 include (CTest)
 
-include(${CMAKE_SOURCE_DIR}/Utilities.cmake)
+if(EXISTS "${CMAKE_SOURCE_DIR}/Utilities.cmake")
+  include(${CMAKE_SOURCE_DIR}/Utilities.cmake)
+elseif(EXISTS "${CMAKE_SOURCE_DIR}/deps/jemalloc/Utilities.cmake")
+  include(${CMAKE_SOURCE_DIR}/deps/jemalloc/Utilities.cmake)
+endif()
+
+
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/build-aux")
 
@@ -185,15 +191,21 @@ endif()
 ##################################################################
 # Versioning from GIT
 # Defaults
-set (jemalloc_version "0.0.0-0-g0000000000000000000000000000000000000000")
-set (jemalloc_version_major 0)
-set (jemalloc_version_minor 0)
-set (jemalloc_version_bugfix 0)
-set (jemalloc_version_nrev 0)
-set (jemalloc_version_gid "0")
+# set (jemalloc_version "0.0.0-0-g0000000000000000000000000000000000000000")
+# set (jemalloc_version_major 0)
+# set (jemalloc_version_minor 0)
+# set (jemalloc_version_bugfix 0)
+# set (jemalloc_version_nrev 0)
+# set (jemalloc_version_gid "0")
 
 find_package(Git)
 GetAndParseVersion()
+set(jemalloc_version "4.3.1-0-g0" CACHE INTERNAL "")
+set(jemalloc_version_major 4 CACHE INTERNAL "")
+set(jemalloc_version_minor 3 CACHE INTERNAL "")
+set(jemalloc_version_bugfix 1 CACHE INTERNAL "")
+set (jemalloc_version_nrev 0)
+set (jemalloc_version_gid "g0")
 
 # We do not support exec_prefix until we find it is necessary
 

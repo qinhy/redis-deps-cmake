@@ -58,6 +58,7 @@ this should preceed the other arguments passed to redis. For instance:
 #include <windows.h>
 #include <windowsx.h>
 #include <shlobj.h>
+#include <shellapi.h>
 #include <tchar.h>
 #include <strsafe.h>
 #include <aclapi.h>

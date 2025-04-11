@@ -302,44 +302,45 @@ static void redisAeReadEvent(aeEventLoop *el, int fd, void *privdata, int mask) 
     WIN32_ONLY(WSIOCP_QueueNextRead(fd);)
 }
 
-#ifdef _WIN32
-static void writeHandlerDone(aeEventLoop *el, int fd, void *privdata, int nwritten) {
-    WSIOCP_Request *req = (WSIOCP_Request *) privdata;
-    redisAeEvents *e = (redisAeEvents *) req->client;
+// #ifdef _WIN32
+// static void writeHandlerDone(aeEventLoop *el, int fd, void *privdata, int nwritten) {
+//     WSIOCP_Request *req = (WSIOCP_Request *) privdata;
+//     redisAeEvents *e = (redisAeEvents *) req->client;
 
-    redisAsyncHandleWriteComplete(e->context, nwritten);
-}
+//     redisAsyncHandleWriteComplete(e->context, nwritten);
+// }
 
-static void redisAeWriteEvent(aeEventLoop *el, int fd, void *privdata, int mask) {
-    redisAeEvents *e = (redisAeEvents*)privdata;
-    redisContext *c = &(e->context->c);
-    int result;
-    ((void)el); ((void)fd); ((void)mask);
+// static void redisAeWriteEvent(aeEventLoop *el, int fd, void *privdata, int mask) {
+//     redisAeEvents *e = (redisAeEvents*)privdata;
+//     redisContext *c = &(e->context->c);
+//     int result;
+//     ((void)el); ((void)fd); ((void)mask);
 
-    if (redisAsyncHandleWritePrep(e->context) == C_OK) {
-        result = WSIOCP_SocketSend((int) c->fd,
-                                   (char*) c->obuf,
-                                   (int) (sdslen(c->obuf)),
-                                   el,
-                                   e,
-                                   NULL,
-                                   writeHandlerDone);
-        if (result == SOCKET_ERROR && errno != WSA_IO_PENDING) {
-            if (errno != EPIPE) {
-                serverLog(LL_VERBOSE, "Writing to socket %s (%d)\n", wsa_strerror(errno), errno);
-            }
-            return;
-        }
-    }
-}
-#else
+//     if (redisAsyncHandleWritePrep(e->context) == C_OK) {
+//         result = WSIOCP_SocketSend((int) c->fd,
+//                                    (char*) c->obuf,
+//                                    (int) (sdslen(c->obuf)),
+//                                    el,
+//                                    e,
+//                                    NULL,
+//                                    writeHandlerDone);
+//         if (result == SOCKET_ERROR && errno != WSA_IO_PENDING) {
+//             if (errno != EPIPE) {
+//                 serverLog(LL_VERBOSE, "Writing to socket %s (%d)\n", wsa_strerror(errno), errno);
+//             }
+//             return;
+//         }
+//     }
+// }
+// #else
+
+// #endif
 static void redisAeWriteEvent(aeEventLoop *el, int fd, void *privdata, int mask) {
     ((void)el); ((void)fd); ((void)mask);
 
     redisAeEvents *e = (redisAeEvents*)privdata;
     redisAsyncHandleWrite(e->context);
 }
-#endif
 
 static void redisAeAddRead(void *privdata) {
     redisAeEvents *e = (redisAeEvents*)privdata;

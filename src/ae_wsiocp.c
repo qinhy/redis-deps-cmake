@@ -49,7 +49,7 @@ typedef struct aeApiState {
 } aeApiState;
 
 /* Find matching value in list and remove. If found return TRUE */
-BOOL removeMatchFromList(list *requestlist, void *value) {
+static BOOL removeMatchFromList(list *requestlist, void *value) {
     listNode *node;
     if (requestlist == NULL) {
         return FALSE;

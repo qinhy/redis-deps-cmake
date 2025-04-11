@@ -1,4 +1,33 @@
+# --- Dependencies First ---
+# OpenSSL
+if(REDIS_ENABLE_TLS)
+  set(OPENSSL_INCLUDE_DIR "${OPENSSL_WIN64_ROOT}/include")
+  set(OPENSSL_LIBRARIES "${OPENSSL_WIN64_ROOT}/lib/libssl" "${OPENSSL_WIN64_ROOT}/lib/libcrypto")
+endif()
+
+# Set policy for linenoise to avoid warnings
+cmake_policy(SET CMP0048 NEW)
+
+# Add subdirectories for dependencies
+add_subdirectory(deps/hiredis)
+add_subdirectory(deps/linenoise)
+add_subdirectory(deps/jemalloc)
+
+# Set compile definitions for MSVC
+if(MSVC)
+  target_compile_definitions(jemalloc PRIVATE __STDC_VERSION__=199000L)
+endif()
+# --------------------------
+
 cmake_minimum_required(VERSION 3.16)
+
+# Set policy based on the CMake version
+cmake_policy(VERSION 3.4.3)
+
+if(POLICY CMP0042)
+  cmake_policy(SET CMP0042 NEW)
+endif()
+
 project(redis-windows VERSION 7.2 LANGUAGES C CXX)
 
 # --- Build type configuration ---
@@ -17,7 +46,7 @@ set(LUA_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/deps/lua/include" CACHE PATH "P
 set(LUA_LIBRARY "${CMAKE_CURRENT_SOURCE_DIR}/deps/lua/lua.lib" CACHE PATH "Path to lua library")
 
 # --- Compiler Settings ---
-set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
 if(MSVC)
@@ -35,23 +64,13 @@ if(MSVC)
       endif()
     endforeach()
   endif()
+
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /wd5105")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /FC /d2Zi+ /Zi /FS /nologo /W3 /WX /GS /Zc:wchar_t /Zc:forScope /errorReport:queue /D_PREFAST_=1")
+
 endif()
 
-# --- Dependencies ---
-# OpenSSL
-if(REDIS_ENABLE_TLS)
-  set(OPENSSL_INCLUDE_DIR "${OPENSSL_WIN64_ROOT}/include")
-  set(OPENSSL_LIBRARIES "${OPENSSL_WIN64_ROOT}/lib/libssl" "${OPENSSL_WIN64_ROOT}/lib/libcrypto")
-endif()
 
-# Set policy for linenoise to avoid warnings
-cmake_policy(SET CMP0048 NEW)
-
-# Hiredis
-add_subdirectory(deps/hiredis)
-
-# Linenoise
-add_subdirectory(deps/linenoise)
 
 # --- Common Definitions and Libraries ---
 set(REDIS_COMMON_DEFINITIONS
@@ -67,6 +86,8 @@ if(REDIS_ENABLE_TLS)
   list(APPEND REDIS_COMMON_DEFINITIONS USE_OPENSSL)
 endif()
 
+list(APPEND REDIS_COMMON_DEFINITIONS USE_JEMALLOC)
+
 set(REDIS_COMMON_LIBS
   ws2_32
   advapi32
@@ -74,6 +95,7 @@ set(REDIS_COMMON_LIBS
   crypt32
   shlwapi
   bcrypt
+  psapi
 )
 
 if(REDIS_ENABLE_TLS)
@@ -87,6 +109,8 @@ include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}/deps/hiredis
   ${CMAKE_CURRENT_SOURCE_DIR}/deps/linenoise/include
   ${LUA_INCLUDE_DIR}
+  ${CMAKE_CURRENT_SOURCE_DIR}/deps/jemalloc/include
+  ${CMAKE_CURRENT_SOURCE_DIR}/deps/jemalloc/include/msvc_compat
 )
 
 if(REDIS_ENABLE_TLS)
@@ -109,7 +133,9 @@ set(WIN32_INTEROP_SRC
   src/Win32_Interop/win32_rfdmap.cpp
   src/Win32_Interop/Win32_EventLog.cpp
   src/Win32_Interop/Win32_QFork_impl.c
+  src/Win32_Interop/Win32_QFork.cpp
   src/Win32_Interop/Win32_variadicFunctor.cpp
+  src/Win32_Interop/Win32_service.cpp
 )
 
 # --- Redis Server ---
@@ -130,11 +156,12 @@ if(WIN32)
   list(FILTER REDIS_SRC EXCLUDE REGEX ".*ae_evport\\.c$")
   list(FILTER REDIS_SRC EXCLUDE REGEX ".*ae_kqueue\\.c$")
   list(FILTER REDIS_SRC EXCLUDE REGEX ".*ae_select\\.c$")
+  add_executable(redis-server ${REDIS_SRC} ${WIN32_INTEROP_SRC})
+else()
+  add_executable(redis-server ${REDIS_SRC})
 endif()
-
-add_executable(redis-server ${REDIS_SRC})
 target_compile_definitions(redis-server PRIVATE ${REDIS_COMMON_DEFINITIONS})
-target_link_libraries(redis-server ${REDIS_COMMON_LIBS} ${LUA_LIBRARY})
+target_link_libraries(redis-server ${REDIS_COMMON_LIBS} ${LUA_LIBRARY} jemalloc)
 
 # --- Redis Benchmark ---
 if(REDIS_BUILD_BENCHMARK)

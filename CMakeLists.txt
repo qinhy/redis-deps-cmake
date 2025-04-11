@@ -62,7 +62,7 @@ if(MSVC)
     endforeach()
   endif()
 
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /wd5105")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /wd5105 /wd4267")
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /FC /d2Zi+ /Zi /FS /nologo /W3 /WX /GS /Zc:wchar_t /Zc:forScope /errorReport:queue /D_PREFAST_=1")
 
 endif()

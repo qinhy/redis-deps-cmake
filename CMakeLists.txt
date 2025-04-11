@@ -119,23 +119,23 @@ endif()
 
 # --- Windows Interop Files ---
 set(WIN32_INTEROP_SRC
-  src/Win32_Interop/Win32_APIs.c
-  src/Win32_Interop/Win32_Error.c
-  src/Win32_Interop/Win32_Time.c
-  src/Win32_Interop/Win32_PThread.c
-  src/Win32_Interop/Win32_Signal_Process.c
-  src/Win32_Interop/Win32_ThreadControl.c
-  src/Win32_Interop/win32fixes.c
-  src/Win32_Interop/win32_wsiocp.c
-  src/Win32_Interop/Win32_FDAPI.cpp
-  src/Win32_Interop/Win32_Common.cpp
-  src/Win32_Interop/Win32_RedisLog.c
-  src/Win32_Interop/win32_rfdmap.cpp
-  src/Win32_Interop/Win32_EventLog.cpp
-  src/Win32_Interop/Win32_QFork_impl.c
-  src/Win32_Interop/Win32_QFork.cpp
-  src/Win32_Interop/Win32_variadicFunctor.cpp
-  src/Win32_Interop/Win32_service.cpp
+  # src/Win32_Interop/Win32_APIs.c
+  # src/Win32_Interop/Win32_Error.c
+  # src/Win32_Interop/Win32_Time.c
+  # src/Win32_Interop/Win32_PThread.c
+  # src/Win32_Interop/Win32_Signal_Process.c
+  # src/Win32_Interop/Win32_ThreadControl.c
+  # src/Win32_Interop/win32fixes.c
+  # src/Win32_Interop/win32_wsiocp.c
+  # src/Win32_Interop/Win32_FDAPI.cpp
+  # src/Win32_Interop/Win32_Common.cpp
+  # src/Win32_Interop/Win32_RedisLog.c
+  # src/Win32_Interop/win32_rfdmap.cpp
+  # src/Win32_Interop/Win32_EventLog.cpp
+  # src/Win32_Interop/Win32_QFork_impl.c
+  # src/Win32_Interop/Win32_QFork.cpp
+  # src/Win32_Interop/Win32_variadicFunctor.cpp
+  # src/Win32_Interop/Win32_service.cpp
 )
 
 # --- Redis Server ---

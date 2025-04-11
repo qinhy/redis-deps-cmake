@@ -25,9 +25,6 @@ A million repetitions of "a"
 #include <string.h>
 #include <stdint.h>
 #include "solarisfixes.h"
-#ifdef _WIN32
-#include "Win32_Interop/win32fixes.h"
-#endif
 #include "sha1.h"
 #include "config.h"
 
@@ -41,11 +38,7 @@ A million repetitions of "a"
 #elif BYTE_ORDER == BIG_ENDIAN
 #define blk0(i) block->l[i]
 #else
-#ifdef _WIN32
-#pragma error "Endianness not defined!"
-#else
 #error "Endianness not defined!"
-#endif
 #endif
 #define blk(i) (block->l[i&15] = rol(block->l[(i+13)&15]^block->l[(i+8)&15] \
     ^block->l[(i+2)&15]^block->l[i&15],1))
@@ -132,6 +125,14 @@ void SHA1Init(SHA1_CTX* context)
     context->count[0] = context->count[1] = 0;
 }
 
+/* This source code is referenced from
+ * https://github.com/libevent/libevent/commit/e1d7d3e40a7fd50348d849046fbfd9bf976e643c */
+#if defined(__GNUC__) && __GNUC__ >= 12
+#pragma GCC diagnostic push
+/* Ignore the case when SHA1Transform() called with 'char *', that code passed
+ * buffer of 64 bytes anyway (at least now) */
+#pragma GCC diagnostic ignored "-Wstringop-overread"
+#endif
 
 /* Run your data through this. */
 
@@ -156,6 +157,9 @@ void SHA1Update(SHA1_CTX* context, const unsigned char* data, uint32_t len)
     memcpy(&context->buffer[j], &data[i], len - i);
 }
 
+#if defined(__GNUC__) && __GNUC__ >= 12
+#pragma GCC diagnostic pop
+#endif
 
 /* Add padding and return the message digest. */
 
@@ -208,7 +212,7 @@ void SHA1Final(unsigned char digest[20], SHA1_CTX* context)
 #define BUFSIZE 4096
 
 #define UNUSED(x) (void)(x)
-int sha1Test(int argc, char **argv)
+int sha1Test(int argc, char **argv, int flags)
 {
     SHA1_CTX ctx;
     unsigned char hash[20], buf[BUFSIZE];
@@ -216,6 +220,7 @@ int sha1Test(int argc, char **argv)
 
     UNUSED(argc);
     UNUSED(argv);
+    UNUSED(flags);
 
     for(i=0;i<BUFSIZE;i++)
         buf[i] = i;

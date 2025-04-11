@@ -1,40 +1,14 @@
 /* Rax -- A radix tree implementation.
  *
- * Copyright (c) 2017-2018, Salvatore Sanfilippo <antirez at gmail dot com>
+ * Copyright (c) 2017-Present, Redis Ltd.
  * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- *   * Redistributions of source code must retain the above copyright notice,
- *     this list of conditions and the following disclaimer.
- *   * Redistributions in binary form must reproduce the above copyright
- *     notice, this list of conditions and the following disclaimer in the
- *     documentation and/or other materials provided with the distribution.
- *   * Neither the name of Redis nor the names of its contributors may be used
- *     to endorse or promote products derived from this software without
- *     specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * Licensed under your choice of the Redis Source Available License 2.0
+ * (RSALv2) or the Server Side Public License v1 (SSPLv1).
  */
 
 #ifndef RAX_H
 #define RAX_H
-
-#ifdef _WIN32
-#include "Win32_Interop/Win32_Portability.h"
-#include "Win32_Interop/win32_types.h"
-#endif
 
 #include <stdint.h>
 
@@ -63,7 +37,7 @@
  * successive nodes having a single child are "compressed" into the node
  * itself as a string of characters, each representing a next-level child,
  * and only the link to the node representing the last character node is
- * provided inside the representation. So the above representation is turend
+ * provided inside the representation. So the above representation is turned
  * into:
  *
  *                  ["foo"] ""
@@ -128,7 +102,7 @@ typedef struct raxNode {
      * nodes).
      *
      * If the node has an associated key (iskey=1) and is not NULL
-     * (isnull=0), then after the raxNode pointers poiting to the
+     * (isnull=0), then after the raxNode pointers pointing to the
      * children, an additional value pointer is present (as you can see
      * in the representation above as "value-ptr" field).
      */
@@ -139,6 +113,7 @@ typedef struct rax {
     raxNode *head;
     uint64_t numele;
     uint64_t numnodes;
+    void *metadata[];
 } rax;
 
 /* Stack data structure used by raxLowWalk() in order to, optionally, return
@@ -190,17 +165,18 @@ typedef struct raxIterator {
     raxNodeCallback node_cb; /* Optional node callback. Normally set to NULL. */
 } raxIterator;
 
-/* A special pointer returned for not found items. */
-extern void *raxNotFound;
-
 /* Exported API. */
 rax *raxNew(void);
+rax *raxNewWithMetadata(int metaSize);
 int raxInsert(rax *rax, unsigned char *s, size_t len, void *data, void **old);
 int raxTryInsert(rax *rax, unsigned char *s, size_t len, void *data, void **old);
 int raxRemove(rax *rax, unsigned char *s, size_t len, void **old);
-void *raxFind(rax *rax, unsigned char *s, size_t len);
+int raxFind(rax *rax, unsigned char *s, size_t len, void **value);
 void raxFree(rax *rax);
 void raxFreeWithCallback(rax *rax, void (*free_callback)(void*));
+void raxFreeWithCbAndContext(rax *rax,
+                             void (*free_callback)(void *item, void *ctx),
+                             void *ctx);
 void raxStart(raxIterator *it, rax *rt);
 int raxSeek(raxIterator *it, const char *op, unsigned char *ele, size_t len);
 int raxNext(raxIterator *it);
@@ -211,7 +187,7 @@ void raxStop(raxIterator *it);
 int raxEOF(raxIterator *it);
 void raxShow(rax *rax);
 uint64_t raxSize(rax *rax);
-PORT_ULONG raxTouch(raxNode *n);
+unsigned long raxTouch(raxNode *n);
 void raxSetDebugMsg(int onoff);
 
 /* Internal API. May be used by the node callback in order to access rax nodes

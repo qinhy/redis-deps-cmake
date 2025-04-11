@@ -13,7 +13,7 @@
  *
  * ----------------------------------------------------------------------------
  *
- * Copyright (c) 2010-2012, Salvatore Sanfilippo <antirez at gmail dot com>
+ * Copyright (c) 2010-current, Redis Ltd.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -41,18 +41,15 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifdef _WIN32
-#include "Win32_Interop/win32_types.h"
-#endif
 #include <stdint.h>
 
 #define N	16
 #define MASK	((1 << (N - 1)) + (1 << (N - 1)) - 1)
 #define LOW(x)	((unsigned)(x) & MASK)
 #define HIGH(x)	LOW((x) >> N)
-#define MUL(x, y, z)	{ int32_t l = (PORT_LONG)(x) * (PORT_LONG)(y); \
+#define MUL(x, y, z)	{ int32_t l = (long)(x) * (long)(y); \
 		(z)[0] = LOW(l); (z)[1] = HIGH(l); }
-#define CARRY(x, y)	((int32_t)(x) + (PORT_LONG)(y) > MASK)
+#define CARRY(x, y)	((int32_t)(x) + (long)(y) > MASK)
 #define ADDEQU(x, y, z)	(z = CARRY(x, (y)), x = LOW(x + (y)))
 #define X0	0x330E
 #define X1	0xABCD
@@ -71,7 +68,7 @@
 static uint32_t x[3] = { X0, X1, X2 }, a[3] = { A0, A1, A2 }, c = C;
 static void next(void);
 
-int32_t redisLrand48() {
+int32_t redisLrand48(void) {
     next();
     return (((int32_t)x[2] << (N - 1)) + (x[1] >> 1));
 }

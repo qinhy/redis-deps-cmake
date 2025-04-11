@@ -1,32 +1,11 @@
 /* hyperloglog.c - Redis HyperLogLog probabilistic cardinality approximation.
  * This file implements the algorithm and the exported Redis commands.
  *
- * Copyright (c) 2014, Salvatore Sanfilippo <antirez at gmail dot com>
+ * Copyright (c) 2014-Present, Redis Ltd.
  * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- *   * Redistributions of source code must retain the above copyright notice,
- *     this list of conditions and the following disclaimer.
- *   * Redistributions in binary form must reproduce the above copyright
- *     notice, this list of conditions and the following disclaimer in the
- *     documentation and/or other materials provided with the distribution.
- *   * Neither the name of Redis nor the names of its contributors may be used
- *     to endorse or promote products derived from this software without
- *     specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * Licensed under your choice of the Redis Source Available License 2.0
+ * (RSALv2) or the Server Side Public License v1 (SSPLv1).
  */
 
 #include "server.h"
@@ -36,9 +15,9 @@
 
 /* The Redis HyperLogLog implementation is based on the following ideas:
  *
- * * The use of a 64 bit hash function as proposed in [1], in order to don't
- *   limited to cardinalities up to 10^9, at the cost of just 1 additional
- *   bit per register.
+ * * The use of a 64 bit hash function as proposed in [1], in order to estimate
+ *   cardinalities larger than 10^9, at the cost of just 1 additional bit per
+ *   register.
  * * The use of 16384 6-bit registers for a great level of accuracy, using
  *   a total of 12k per key.
  * * The use of the Redis string data type. No new type is introduced.
@@ -144,7 +123,7 @@
  * In the example the sparse representation used just 7 bytes instead
  * of 12k in order to represent the HLL registers. In general for low
  * cardinality there is a big win in terms of space efficiency, traded
- * with CPU time since the sparse representation is slower to access:
+ * with CPU time since the sparse representation is slower to access.
  *
  * The following table shows average cardinality vs bytes used, 100
  * samples per cardinality (when the set was not representable because
@@ -205,7 +184,7 @@ struct hllhdr {
 #define HLL_RAW 255 /* Only used internally, never exposed. */
 #define HLL_MAX_ENCODING 1
 
-static char *invalid_hll_err = "-INVALIDOBJ Corrupted HLL object detected\r\n";
+static char *invalid_hll_err = "-INVALIDOBJ Corrupted HLL object detected";
 
 /* =========================== Low level bit macros ========================= */
 
@@ -279,7 +258,7 @@ static char *invalid_hll_err = "-INVALIDOBJ Corrupted HLL object detected\r\n";
  *  So we right shift of 0 bits (no shift in practice) and
  *  left shift the next byte of 8 bits, even if we don't use it,
  *  but this has the effect of clearing the bits so the result
- *  will not be affacted after the OR.
+ *  will not be affected after the OR.
  *
  * -------------------------------------------------------------------------
  *
@@ -297,7 +276,7 @@ static char *invalid_hll_err = "-INVALIDOBJ Corrupted HLL object detected\r\n";
  *   |11000000|  <- Our byte at b0
  *   +--------+
  *
- * To create a AND-mask to clear the bits about this position, we just
+ * To create an AND-mask to clear the bits about this position, we just
  * initialize the mask with the value 63, left shift it of "fs" bits,
  * and finally invert the result.
  *
@@ -338,11 +317,11 @@ static char *invalid_hll_err = "-INVALIDOBJ Corrupted HLL object detected\r\n";
  * 'p' is an array of unsigned bytes. */
 #define HLL_DENSE_GET_REGISTER(target,p,regnum) do { \
     uint8_t *_p = (uint8_t*) p; \
-    PORT_ULONG _byte = regnum*HLL_BITS/8; \
-    PORT_ULONG _fb = regnum*HLL_BITS&7; \
-    PORT_ULONG _fb8 = 8 - _fb; \
-    PORT_ULONG b0 = _p[_byte]; \
-    PORT_ULONG b1 = _p[_byte+1]; \
+    unsigned long _byte = regnum*HLL_BITS/8; \
+    unsigned long _fb = regnum*HLL_BITS&7; \
+    unsigned long _fb8 = 8 - _fb; \
+    unsigned long b0 = _p[_byte]; \
+    unsigned long b1 = _p[_byte+1]; \
     target = ((b0 >> _fb) | (b1 << _fb8)) & HLL_REGISTER_MAX; \
 } while(0)
 
@@ -350,10 +329,10 @@ static char *invalid_hll_err = "-INVALIDOBJ Corrupted HLL object detected\r\n";
  * 'p' is an array of unsigned bytes. */
 #define HLL_DENSE_SET_REGISTER(p,regnum,val) do { \
     uint8_t *_p = (uint8_t*) p; \
-    PORT_ULONG _byte = regnum*HLL_BITS/8; \
-    PORT_ULONG _fb = regnum*HLL_BITS&7; \
-    PORT_ULONG _fb8 = 8 - _fb; \
-    PORT_ULONG _v = val; \
+    unsigned long _byte = (regnum)*HLL_BITS/8; \
+    unsigned long _fb = (regnum)*HLL_BITS&7; \
+    unsigned long _fb8 = 8 - _fb; \
+    unsigned long _v = (val); \
     _p[_byte] &= ~(HLL_REGISTER_MAX << _fb); \
     _p[_byte] |= _v << _fb; \
     _p[_byte+1] &= ~(HLL_REGISTER_MAX >> _fb8); \
@@ -393,6 +372,7 @@ static char *invalid_hll_err = "-INVALIDOBJ Corrupted HLL object detected\r\n";
 /* Our hash function is MurmurHash2, 64 bit version.
  * It was modified for Redis in order to provide the same result in
  * big and little endian archs (endian neutral). */
+REDIS_NO_SANITIZE("alignment")
 uint64_t MurmurHash64A (const void * key, int len, unsigned int seed) {
     const uint64_t m = 0xc6a4a7935bd1e995;
     const int r = 47;
@@ -448,7 +428,7 @@ uint64_t MurmurHash64A (const void * key, int len, unsigned int seed) {
 /* Given a string element to add to the HyperLogLog, returns the length
  * of the pattern 000..1 of the element hash. As a side effect 'regp' is
  * set to the register index this element hashes to. */
-int hllPatLen(unsigned char *ele, size_t elesize, PORT_LONG *regp) {
+int hllPatLen(unsigned char *ele, size_t elesize, long *regp) {
     uint64_t hash, bit, index;
     int count;
 
@@ -463,7 +443,7 @@ int hllPatLen(unsigned char *ele, size_t elesize, PORT_LONG *regp) {
      *
      * This may sound like inefficient, but actually in the average case
      * there are high probabilities to find a 1 after a few iterations. */
-    hash = MurmurHash64A(ele,(int)elesize,0xadc83b19ULL);                       WIN_PORT_FIX /* cast (int) */
+    hash = MurmurHash64A(ele,elesize,0xadc83b19ULL);
     index = hash & HLL_P_MASK; /* Register index. */
     hash >>= HLL_P; /* Remove bits used to address the register. */
     hash |= ((uint64_t)1<<HLL_Q); /* Make sure the loop terminates
@@ -490,7 +470,7 @@ int hllPatLen(unsigned char *ele, size_t elesize, PORT_LONG *regp) {
  * The function always succeed, however if as a result of the operation
  * the approximated cardinality changed, 1 is returned. Otherwise 0
  * is returned. */
-int hllDenseSet(uint8_t *registers, PORT_LONG index, uint8_t count) {
+int hllDenseSet(uint8_t *registers, long index, uint8_t count) {
     uint8_t oldcount;
 
     HLL_DENSE_GET_REGISTER(oldcount,registers,index);
@@ -509,7 +489,7 @@ int hllDenseSet(uint8_t *registers, PORT_LONG index, uint8_t count) {
  * This is just a wrapper to hllDenseSet(), performing the hashing of the
  * element in order to retrieve the index and zero-run count. */
 int hllDenseAdd(uint8_t *registers, unsigned char *ele, size_t elesize) {
-    PORT_LONG index;
+    long index;
     uint8_t count = hllPatLen(ele,elesize,&index);
     /* Update the register if this element produced a longer run of zeroes. */
     return hllDenseSet(registers,index,count);
@@ -524,7 +504,7 @@ void hllDenseRegHisto(uint8_t *registers, int* reghisto) {
      * we take a faster path with unrolled loops. */
     if (HLL_REGISTERS == 16384 && HLL_BITS == 6) {
         uint8_t *r = registers;
-        PORT_ULONG r0, r1, r2, r3, r4, r5, r6, r7, r8, r9,
+        unsigned long r0, r1, r2, r3, r4, r5, r6, r7, r8, r9,
                       r10, r11, r12, r13, r14, r15;
         for (j = 0; j < 1024; j++) {
             /* Handle 16 registers per iteration. */
@@ -566,7 +546,7 @@ void hllDenseRegHisto(uint8_t *registers, int* reghisto) {
         }
     } else {
         for(j = 0; j < HLL_REGISTERS; j++) {
-            PORT_ULONG reg;
+            unsigned long reg;
             HLL_DENSE_GET_REGISTER(reg,registers,j);
             reghisto[reg]++;
         }
@@ -651,22 +631,32 @@ int hllSparseToDense(robj *o) {
  * sparse to dense: this happens when a register requires to be set to a value
  * not representable with the sparse representation, or when the resulting
  * size would be greater than server.hll_sparse_max_bytes. */
-int hllSparseSet(robj *o, PORT_LONG index, uint8_t count) {
+int hllSparseSet(robj *o, long index, uint8_t count) {
     struct hllhdr *hdr;
     uint8_t oldcount, *sparse, *end, *p, *prev, *next;
-    PORT_LONG first, span;
-    PORT_LONG is_zero = 0, is_xzero = 0, is_val = 0, runlen = 0;
+    long first, span;
+    long is_zero = 0, is_xzero = 0, is_val = 0, runlen = 0;
 
     /* If the count is too big to be representable by the sparse representation
      * switch to dense representation. */
     if (count > HLL_SPARSE_VAL_MAX_VALUE) goto promote;
 
-    /* When updating a sparse representation, sometimes we may need to
-     * enlarge the buffer for up to 3 bytes in the worst case (XZERO split
-     * into XZERO-VAL-XZERO). Make sure there is enough space right now
-     * so that the pointers we take during the execution of the function
-     * will be valid all the time. */
-    o->ptr = sdsMakeRoomFor(o->ptr,3);
+    /* When updating a sparse representation, sometimes we may need to enlarge the
+     * buffer for up to 3 bytes in the worst case (XZERO split into XZERO-VAL-XZERO),
+     * and the following code does the enlarge job.
+     * Actually, we use a greedy strategy, enlarge more than 3 bytes to avoid the need
+     * for future reallocates on incremental growth. But we do not allocate more than
+     * 'server.hll_sparse_max_bytes' bytes for the sparse representation.
+     * If the available size of hyperloglog sds string is not enough for the increment
+     * we need, we promote the hypreloglog to dense representation in 'step 3'.
+     */
+    if (sdsalloc(o->ptr) < server.hll_sparse_max_bytes && sdsavail(o->ptr) < 3) {
+        size_t newlen = sdslen(o->ptr) + 3;
+        newlen += min(newlen, 300); /* Greediness: double 'newlen' if it is smaller than 300, or add 300 to it when it exceeds 300 */
+        if (newlen > server.hll_sparse_max_bytes)
+            newlen = server.hll_sparse_max_bytes;
+        o->ptr = sdsResize(o->ptr, newlen, 1);
+    }
 
     /* Step 1: we need to locate the opcode we need to modify to check
      * if a value update is actually needed. */
@@ -678,7 +668,7 @@ int hllSparseSet(robj *o, PORT_LONG index, uint8_t count) {
     next = NULL; /* Points to the next opcode at the end of the loop. */
     span = 0;
     while(p < end) {
-        PORT_LONG oplen;
+        long oplen;
 
         /* Set span to the number of registers covered by this opcode.
          *
@@ -766,7 +756,7 @@ int hllSparseSet(robj *o, PORT_LONG index, uint8_t count) {
      * by a ZERO opcode with len > 1, or by an XZERO opcode.
      *
      * In those cases the original opcode must be split into multiple
-     * opcodes. The worst case is an XZERO split in the middle resuling into
+     * opcodes. The worst case is an XZERO split in the middle resulting into
      * XZERO - VAL - XZERO, so the resulting sequence max length is
      * 5 bytes.
      *
@@ -775,13 +765,13 @@ int hllSparseSet(robj *o, PORT_LONG index, uint8_t count) {
      * of the old one, possibly moving what is on the right a few bytes
      * if the new sequence is longer than the older one. */
     uint8_t seq[5], *n = seq;
-    int last = (int)(first+span-1); /* Last register covered by the sequence. */  WIN_PORT_FIX /* cast (int) */
+    int last = first+span-1; /* Last register covered by the sequence. */
     int len;
 
     if (is_zero || is_xzero) {
         /* Handle splitting of ZERO / XZERO. */
         if (index != first) {
-            len = (int)(index-first);                                           WIN_PORT_FIX /* cast (int) */
+            len = index-first;
             if (len > HLL_SPARSE_ZERO_MAX_LEN) {
                 HLL_SPARSE_XZERO_SET(n,len);
                 n += 2;
@@ -793,7 +783,7 @@ int hllSparseSet(robj *o, PORT_LONG index, uint8_t count) {
         HLL_SPARSE_VAL_SET(n,count,1);
         n++;
         if (index != last) {
-            len = (int)(last-index);                                            WIN_PORT_FIX /* cast (int) */
+            len = last-index;
             if (len > HLL_SPARSE_ZERO_MAX_LEN) {
                 HLL_SPARSE_XZERO_SET(n,len);
                 n += 2;
@@ -807,14 +797,14 @@ int hllSparseSet(robj *o, PORT_LONG index, uint8_t count) {
         int curval = HLL_SPARSE_VAL_VALUE(p);
 
         if (index != first) {
-            len = (int)(index-first);                                           WIN_PORT_FIX /* cast (int) */
+            len = index-first;
             HLL_SPARSE_VAL_SET(n,curval,len);
             n++;
         }
         HLL_SPARSE_VAL_SET(n,count,1);
         n++;
         if (index != last) {
-            len = (int)(last-index);                                            WIN_PORT_FIX /* cast (int) */
+            len = last-index;
             HLL_SPARSE_VAL_SET(n,curval,len);
             n++;
         }
@@ -823,17 +813,18 @@ int hllSparseSet(robj *o, PORT_LONG index, uint8_t count) {
     /* Step 3: substitute the new sequence with the old one.
      *
      * Note that we already allocated space on the sds string
-     * calling sdsMakeRoomFor(). */
-     int seqlen = (int)(n-seq);                                                 WIN_PORT_FIX /* cast (int) */
-     int oldlen = is_xzero ? 2 : 1;
-     int deltalen = seqlen-oldlen;
+     * calling sdsResize(). */
+    int seqlen = n-seq;
+    int oldlen = is_xzero ? 2 : 1;
+    int deltalen = seqlen-oldlen;
 
-     if (deltalen > 0 &&
-         sdslen(o->ptr)+deltalen > server.hll_sparse_max_bytes) goto promote;
-     if (deltalen && next) memmove(next+deltalen,next,end-next);
-     sdsIncrLen(o->ptr,deltalen);
-     memcpy(p,seq,seqlen);
-     end += deltalen;
+    if (deltalen > 0 &&
+        sdslen(o->ptr) + deltalen > server.hll_sparse_max_bytes) goto promote;
+    serverAssert(sdslen(o->ptr) + deltalen <= sdsalloc(o->ptr));
+    if (deltalen && next) memmove(next+deltalen,next,end-next);
+    sdsIncrLen(o->ptr,deltalen);
+    memcpy(p,seq,seqlen);
+    end += deltalen;
 
 updated:
     /* Step 4: Merge adjacent values if possible.
@@ -899,9 +890,9 @@ promote: /* Promote to dense representation. */
  * the element belongs to is incremented if needed.
  *
  * This function is actually a wrapper for hllSparseSet(), it only performs
- * the hashshing of the elmenet to obtain the index and zeros run length. */
+ * the hashing of the element to obtain the index and zeros run length. */
 int hllSparseAdd(robj *o, unsigned char *ele, size_t elesize) {
-    PORT_LONG index;
+    long index;
     uint8_t count = hllPatLen(ele,elesize,&index);
     /* Update the register if this element produced a longer run of zeroes. */
     return hllSparseSet(o,index,count);
@@ -1014,7 +1005,7 @@ uint64_t hllCount(struct hllhdr *hdr, int *invalid) {
     double m = HLL_REGISTERS;
     double E;
     int j;
-    /* Note that reghisto size could be just HLL_Q+2, becuase HLL_Q+1 is
+    /* Note that reghisto size could be just HLL_Q+2, because HLL_Q+1 is
      * the maximum frequency of the "000...1" sequence the hash function is
      * able to return. However it is slow to check for sanity of the
      * input: instead we history array at a safe size: overflows will
@@ -1033,7 +1024,7 @@ uint64_t hllCount(struct hllhdr *hdr, int *invalid) {
         serverPanic("Unknown HyperLogLog encoding in hllCount()");
     }
 
-    /* Estimate cardinality form register histogram. See:
+    /* Estimate cardinality from register histogram. See:
      * "New cardinality estimation algorithms for HyperLogLog sketches"
      * Otmar Ertl, arXiv:1702.01284 */
     double z = m * hllTau((m-reghisto[HLL_Q+1])/(double)m);
@@ -1078,25 +1069,25 @@ int hllMerge(uint8_t *max, robj *hll) {
         }
     } else {
         uint8_t *p = hll->ptr, *end = p + sdslen(hll->ptr);
-        PORT_LONG runlen, regval;
+        long runlen, regval;
 
         p += HLL_HDR_SIZE;
         i = 0;
         while(p < end) {
             if (HLL_SPARSE_IS_ZERO(p)) {
                 runlen = HLL_SPARSE_ZERO_LEN(p);
-                i += (int)runlen;                                               WIN_PORT_FIX /* cast (int) */
+                i += runlen;
                 p++;
             } else if (HLL_SPARSE_IS_XZERO(p)) {
                 runlen = HLL_SPARSE_XZERO_LEN(p);
-                i += (int)runlen;                                               WIN_PORT_FIX /* cast (int) */
+                i += runlen;
                 p += 2;
             } else {
                 runlen = HLL_SPARSE_VAL_LEN(p);
                 regval = HLL_SPARSE_VAL_VALUE(p);
                 if ((runlen + i) > HLL_REGISTERS) break; /* Overflow. */
                 while(runlen--) {
-                    if (regval > max[i]) max[i] = (uint8_t)regval;              WIN_PORT_FIX /* cast (uint8_t) */
+                    if (regval > max[i]) max[i] = regval;
                     i++;
                 }
                 p++;
@@ -1171,9 +1162,8 @@ int isHLLObjectOrReply(client *c, robj *o) {
     return C_OK;
 
 invalid:
-    addReplySds(c,
-        sdsnew("-WRONGTYPE Key is not a valid "
-               "HyperLogLog string value.\r\n"));
+    addReplyError(c,"-WRONGTYPE Key is not a valid "
+               "HyperLogLog string value.");
     return C_ERR;
 }
 
@@ -1203,16 +1193,16 @@ void pfaddCommand(client *c) {
             updated++;
             break;
         case -1:
-            addReplySds(c,sdsnew(invalid_hll_err));
+            addReplyError(c,invalid_hll_err);
             return;
         }
     }
     hdr = o->ptr;
     if (updated) {
-        signalModifiedKey(c->db,c->argv[1]);
-        notifyKeyspaceEvent(NOTIFY_STRING,"pfadd",c->argv[1],c->db->id);
-        server.dirty++;
         HLL_INVALIDATE_CACHE(hdr);
+        signalModifiedKey(c,c->db,c->argv[1]);
+        notifyKeyspaceEvent(NOTIFY_STRING,"pfadd",c->argv[1],c->db->id);
+        server.dirty += updated;
     }
     addReply(c, updated ? shared.cone : shared.czero);
 }
@@ -1242,10 +1232,10 @@ void pfcountCommand(client *c) {
             if (o == NULL) continue; /* Assume empty HLL for non existing var.*/
             if (isHLLObjectOrReply(c,o) != C_OK) return;
 
-            /* Merge with this HLL with our 'max' HHL by setting max[i]
+            /* Merge with this HLL with our 'max' HLL by setting max[i]
              * to MAX(max[i],hll[i]). */
             if (hllMerge(registers,o) == C_ERR) {
-                addReplySds(c,sdsnew(invalid_hll_err));
+                addReplyError(c,invalid_hll_err);
                 return;
             }
         }
@@ -1258,8 +1248,15 @@ void pfcountCommand(client *c) {
     /* Case 2: cardinality of the single HLL.
      *
      * The user specified a single key. Either return the cached value
-     * or compute one and update the cache. */
-    o = lookupKeyWrite(c->db,c->argv[1]);
+     * or compute one and update the cache.
+     *
+     * Since a HLL is a regular Redis string type value, updating the cache does
+     * modify the value. We do a lookupKeyRead anyway since this is flagged as a
+     * read-only command. The difference is that with lookupKeyWrite, a
+     * logically expired key on a replica is deleted, while with lookupKeyRead
+     * it isn't, but the lookup returns NULL either way if the key is logically
+     * expired, which is what matters here. */
+    o = lookupKeyRead(c->db,c->argv[1]);
     if (o == NULL) {
         /* No key? Cardinality is zero since no element was added, otherwise
          * we would have a key as HLLADD creates it as a side effect. */
@@ -1285,7 +1282,7 @@ void pfcountCommand(client *c) {
             /* Recompute it and update the cached value. */
             card = hllCount(hdr,&invalid);
             if (invalid) {
-                addReplySds(c,sdsnew(invalid_hll_err));
+                addReplyError(c,invalid_hll_err);
                 return;
             }
             hdr->card[0] = card & 0xff;
@@ -1296,11 +1293,10 @@ void pfcountCommand(client *c) {
             hdr->card[5] = (card >> 40) & 0xff;
             hdr->card[6] = (card >> 48) & 0xff;
             hdr->card[7] = (card >> 56) & 0xff;
-            /* This is not considered a read-only command even if the
-             * data structure is not modified, since the cached value
+            /* This is considered a read-only command even if the cached value
              * may be modified and given that the HLL is a Redis string
              * we need to propagate the change. */
-            signalModifiedKey(c->db,c->argv[1]);
+            signalModifiedKey(c,c->db,c->argv[1]);
             server.dirty++;
         }
         addReplyLongLong(c,card);
@@ -1329,10 +1325,10 @@ void pfmergeCommand(client *c) {
         hdr = o->ptr;
         if (hdr->encoding == HLL_DENSE) use_dense = 1;
 
-        /* Merge with this HLL with our 'max' HHL by setting max[i]
+        /* Merge with this HLL with our 'max' HLL by setting max[i]
          * to MAX(max[i],hll[i]). */
         if (hllMerge(max,o) == C_ERR) {
-            addReplySds(c,sdsnew(invalid_hll_err));
+            addReplyError(c,invalid_hll_err);
             return;
         }
     }
@@ -1355,7 +1351,7 @@ void pfmergeCommand(client *c) {
     /* Convert the destination object to dense representation if at least
      * one of the inputs was dense. */
     if (use_dense && hllSparseToDense(o) == C_ERR) {
-        addReplySds(c,sdsnew(invalid_hll_err));
+        addReplyError(c,invalid_hll_err);
         return;
     }
 
@@ -1373,7 +1369,7 @@ void pfmergeCommand(client *c) {
                      last hllSparseSet() call. */
     HLL_INVALIDATE_CACHE(hdr);
 
-    signalModifiedKey(c->db,c->argv[1]);
+    signalModifiedKey(c,c->db,c->argv[1]);
     /* We generate a PFADD event for PFMERGE for semantical simplicity
      * since in theory this is a mass-add of elements. */
     notifyKeyspaceEvent(NOTIFY_STRING,"pfadd",c->argv[1],c->db->id);
@@ -1461,7 +1457,7 @@ void pfselftestCommand(client *c) {
         /* Check error. */
         if (j == checkpoint) {
             int64_t abserr = checkpoint - (int64_t)hllCount(hdr,NULL);
-            uint64_t maxerr = (uint64_t)ceil(relerr*6*checkpoint);              WIN_PORT_FIX /* cast (uint64_t) */
+            uint64_t maxerr = ceil(relerr*6*checkpoint);
 
             /* Adjust the max error we expect for cardinality 10
              * since from time to time it is statistically likely to get
@@ -1473,8 +1469,8 @@ void pfselftestCommand(client *c) {
             if (abserr > (int64_t)maxerr) {
                 addReplyErrorFormat(c,
                     "TESTFAILED Too big error. card:%llu abserr:%llu",
-                    (PORT_ULONGLONG) checkpoint,
-                    (PORT_ULONGLONG) abserr);
+                    (unsigned long long) checkpoint,
+                    (unsigned long long) abserr);
                 goto cleanup;
             }
             checkpoint *= 10;
@@ -1489,8 +1485,13 @@ cleanup:
     if (o) decrRefCount(o);
 }
 
-/* PFDEBUG <subcommand> <key> ... args ...
- * Different debugging related operations about the HLL implementation. */
+/* Different debugging related operations about the HLL implementation.
+ *
+ * PFDEBUG GETREG <key>
+ * PFDEBUG DECODE <key>
+ * PFDEBUG ENCODING <key>
+ * PFDEBUG TODENSE <key>
+ */
 void pfdebugCommand(client *c) {
     char *cmd = c->argv[1]->ptr;
     struct hllhdr *hdr;
@@ -1512,14 +1513,14 @@ void pfdebugCommand(client *c) {
 
         if (hdr->encoding == HLL_SPARSE) {
             if (hllSparseToDense(o) == C_ERR) {
-                addReplySds(c,sdsnew(invalid_hll_err));
+                addReplyError(c,invalid_hll_err);
                 return;
             }
             server.dirty++; /* Force propagation on encoding change. */
         }
 
         hdr = o->ptr;
-        addReplyMultiBulkLen(c,HLL_REGISTERS);
+        addReplyArrayLen(c,HLL_REGISTERS);
         for (j = 0; j < HLL_REGISTERS; j++) {
             uint8_t val;
 
@@ -1577,7 +1578,7 @@ void pfdebugCommand(client *c) {
 
         if (hdr->encoding == HLL_SPARSE) {
             if (hllSparseToDense(o) == C_ERR) {
-                addReplySds(c,sdsnew(invalid_hll_err));
+                addReplyError(c,invalid_hll_err);
                 return;
             }
             conv = 1;

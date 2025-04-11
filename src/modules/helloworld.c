@@ -6,43 +6,18 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Copyright (c) 2016, Salvatore Sanfilippo <antirez at gmail dot com>
+ * Copyright (c) 2016-Present, Redis Ltd.
  * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- *   * Redistributions of source code must retain the above copyright notice,
- *     this list of conditions and the following disclaimer.
- *   * Redistributions in binary form must reproduce the above copyright
- *     notice, this list of conditions and the following disclaimer in the
- *     documentation and/or other materials provided with the distribution.
- *   * Neither the name of Redis nor the names of its contributors may be used
- *     to endorse or promote products derived from this software without
- *     specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * Licensed under your choice of the Redis Source Available License 2.0
+ * (RSALv2) or the Server Side Public License v1 (SSPLv1).
  */
 
-#include "../Win32_Interop/win32_types_hiredis.h"
 #include "../redismodule.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
-#ifdef _WIN32
-#include "../Win32_Interop/win32_types_hiredis.h"
-#endif
 
 /* HELLO.SIMPLE is among the simplest commands you can implement.
  * It just returns the currently selected DB id, a functionality which is
@@ -88,14 +63,14 @@ int HelloPushCall_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
     RedisModuleCallReply *reply;
 
     reply = RedisModule_Call(ctx,"RPUSH","ss",argv[1],argv[2]);
-    PORT_LONGLONG len = RedisModule_CallReplyInteger(reply);
+    long long len = RedisModule_CallReplyInteger(reply);
     RedisModule_FreeCallReply(reply);
     RedisModule_ReplyWithLongLong(ctx,len);
     return REDISMODULE_OK;
 }
 
 /* HELLO.PUSH.CALL2
- * This is exaxctly as HELLO.PUSH.CALL, but shows how we can reply to the
+ * This is exactly as HELLO.PUSH.CALL, but shows how we can reply to the
  * client using directly a reply object that Call() returned. */
 int HelloPushCall2_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 {
@@ -118,7 +93,7 @@ int HelloListSumLen_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
 
     RedisModuleCallReply *reply;
 
-    reply = RedisModule_Call(ctx,"LRANGE","sll",argv[1],(PORT_LONGLONG)0,(PORT_LONGLONG)-1);
+    reply = RedisModule_Call(ctx,"LRANGE","sll",argv[1],(long long)0,(long long)-1);
     size_t strlen = 0;
     size_t items = RedisModule_CallReplyLength(reply);
     size_t j;
@@ -154,7 +129,7 @@ int HelloListSplice_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
         return RedisModule_ReplyWithError(ctx,REDISMODULE_ERRORMSG_WRONGTYPE);
     }
 
-    PORT_LONGLONG count;
+    long long count;
     if ((RedisModule_StringToLongLong(argv[3],&count) != REDISMODULE_OK) ||
         (count < 0)) {
         RedisModule_CloseKey(srckey);
@@ -199,7 +174,7 @@ int HelloListSpliceAuto_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **ar
         return RedisModule_ReplyWithError(ctx,REDISMODULE_ERRORMSG_WRONGTYPE);
     }
 
-    PORT_LONGLONG count;
+    long long count;
     if ((RedisModule_StringToLongLong(argv[3],&count) != REDISMODULE_OK) ||
         (count < 0))
     {
@@ -224,7 +199,7 @@ int HelloListSpliceAuto_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **ar
  * It just outputs <count> random numbers. */
 int HelloRandArray_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     if (argc != 2) return RedisModule_WrongArity(ctx);
-    PORT_LONGLONG count;
+    long long count;
     if (RedisModule_StringToLongLong(argv[1],&count) != REDISMODULE_OK ||
         count < 0)
         return RedisModule_ReplyWithError(ctx,"ERR invalid count");
@@ -290,12 +265,12 @@ int HelloRepl2_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int a
         return RedisModule_ReplyWithError(ctx,REDISMODULE_ERRORMSG_WRONGTYPE);
 
     size_t listlen = RedisModule_ValueLength(key);
-    PORT_LONGLONG sum = 0;
+    long long sum = 0;
 
     /* Rotate and increment. */
     while(listlen--) {
         RedisModuleString *ele = RedisModule_ListPop(key,REDISMODULE_LIST_TAIL);
-        PORT_LONGLONG val;
+        long long val;
         if (RedisModule_StringToLongLong(ele,&val) != REDISMODULE_OK) val = 0;
         val++;
         sum += val;
@@ -349,7 +324,7 @@ int HelloToggleCase_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
 
 /* HELLO.MORE.EXPIRE key milliseconds.
  *
- * If they key has already an associated TTL, extends it by "milliseconds"
+ * If the key has already an associated TTL, extends it by "milliseconds"
  * milliseconds. Otherwise no operation is performed. */
 int HelloMoreExpire_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx); /* Use automatic memory management. */
@@ -447,7 +422,7 @@ int HelloLexRange_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
     }
 
     int arraylen = 0;
-    RedisModule_ReplyWithArray(ctx,REDISMODULE_POSTPONED_ARRAY_LEN);
+    RedisModule_ReplyWithArray(ctx,REDISMODULE_POSTPONED_LEN);
     while(!RedisModule_ZsetRangeEndReached(key)) {
         double score;
         RedisModuleString *ele = RedisModule_ZsetRangeCurrentElement(key,&score);
@@ -512,7 +487,7 @@ int HelloHCopy_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int a
  * active. */
 int HelloLeftPad_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx); /* Use automatic memory management. */
-    PORT_LONGLONG padlen;
+    long long padlen;
 
     if (argc != 4) return RedisModule_WrongArity(ctx);
 
@@ -537,7 +512,7 @@ int HelloLeftPad_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
     /* Here we use our pool allocator, for our throw-away allocation. */
     padlen -= strlen;
     char *buf = RedisModule_PoolAlloc(ctx,padlen+strlen);
-    for (PORT_LONGLONG j = 0; j < padlen; j++) buf[j] = *ch;
+    for (long long j = 0; j < padlen; j++) buf[j] = *ch;
     memcpy(buf+padlen,str,strlen);
 
     RedisModule_ReplyWithStringBuffer(ctx,buf,padlen+strlen);
@@ -546,7 +521,7 @@ int HelloLeftPad_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
 
 /* This function must be present on each Redis module. It is used in order to
  * register the commands into the Redis server. */
-int RedisModule_OnLoad_HelloWorld(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     if (RedisModule_Init(ctx,"helloworld",1,REDISMODULE_APIVER_1)
         == REDISMODULE_ERR) return REDISMODULE_ERR;
 

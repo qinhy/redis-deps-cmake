@@ -19,7 +19,7 @@ if(MSVC)
 endif()
 # --------------------------
 
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 4.0)
 
 # Set policy based on the CMake version
 cmake_policy(VERSION 3.4.3)

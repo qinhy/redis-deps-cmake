@@ -82,13 +82,28 @@
 /* 'noinline' attribute is intended to prevent the `-Wstringop-overread` warning
  * when using gcc-12 later with LTO enabled. It may be removed once the
  * bug[https://gcc.gnu.org/bugzilla/show_bug.cgi?id=96503] is fixed. */
-__attribute__((malloc,alloc_size(1),noinline)) void *zmalloc(size_t size);
-__attribute__((malloc,alloc_size(1),noinline)) void *zcalloc(size_t size);
-__attribute__((malloc,alloc_size(1,2),noinline)) void *zcalloc_num(size_t num, size_t size);
-__attribute__((alloc_size(2),noinline)) void *zrealloc(void *ptr, size_t size);
-__attribute__((malloc,alloc_size(1),noinline)) void *ztrymalloc(size_t size);
-__attribute__((malloc,alloc_size(1),noinline)) void *ztrycalloc(size_t size);
-__attribute__((alloc_size(2),noinline)) void *ztryrealloc(void *ptr, size_t size);
+#ifdef _MSC_VER
+/* MSVC equivalent attributes */
+#define ZMALLOC_ATTR_MALLOC __declspec(restrict)
+#define ZMALLOC_ATTR_ALLOC_SIZE(s)
+#define ZMALLOC_ATTR_ALLOC_SIZE2(s1, s2)
+#define ZMALLOC_ATTR_NOINLINE __declspec(noinline)
+#else
+/* GCC/Clang attributes */
+#define ZMALLOC_ATTR_MALLOC __attribute__((malloc))
+#define ZMALLOC_ATTR_ALLOC_SIZE(s) __attribute__((alloc_size(s)))
+#define ZMALLOC_ATTR_ALLOC_SIZE2(s1, s2) __attribute__((alloc_size(s1, s2)))
+#define ZMALLOC_ATTR_NOINLINE __attribute__((noinline))
+#endif
+
+ZMALLOC_ATTR_MALLOC ZMALLOC_ATTR_ALLOC_SIZE(1) ZMALLOC_ATTR_NOINLINE void *zmalloc(size_t size);
+ZMALLOC_ATTR_MALLOC ZMALLOC_ATTR_ALLOC_SIZE(1) ZMALLOC_ATTR_NOINLINE void *zcalloc(size_t size);
+ZMALLOC_ATTR_MALLOC ZMALLOC_ATTR_ALLOC_SIZE2(1, 2) ZMALLOC_ATTR_NOINLINE void *zcalloc_num(size_t num, size_t size);
+ZMALLOC_ATTR_ALLOC_SIZE(2) ZMALLOC_ATTR_NOINLINE void *zrealloc(void *ptr, size_t size);
+ZMALLOC_ATTR_MALLOC ZMALLOC_ATTR_ALLOC_SIZE(1) ZMALLOC_ATTR_NOINLINE void *ztrymalloc(size_t size);
+ZMALLOC_ATTR_MALLOC ZMALLOC_ATTR_ALLOC_SIZE(1) ZMALLOC_ATTR_NOINLINE void *ztrycalloc(size_t size);
+ZMALLOC_ATTR_ALLOC_SIZE(2) ZMALLOC_ATTR_NOINLINE void *ztryrealloc(void *ptr, size_t size);
+
 void zfree(void *ptr);
 void *zmalloc_usable(size_t size, size_t *usable);
 void *zcalloc_usable(size_t size, size_t *usable);
@@ -97,7 +112,13 @@ void *ztrymalloc_usable(size_t size, size_t *usable);
 void *ztrycalloc_usable(size_t size, size_t *usable);
 void *ztryrealloc_usable(void *ptr, size_t size, size_t *usable);
 void zfree_usable(void *ptr, size_t *usable);
-__attribute__((malloc)) char *zstrdup(const char *s);
+
+#ifdef _MSC_VER
+ZMALLOC_ATTR_MALLOC char *zstrdup(const char *s);
+#else
+ZMALLOC_ATTR_MALLOC char *zstrdup(const char *s);
+#endif
+
 size_t zmalloc_used_memory(void);
 void zmalloc_set_oom_handler(void (*oom_handler)(size_t));
 size_t zmalloc_get_rss(void);
@@ -121,7 +142,7 @@ void zfree_with_flags(void *ptr, int flags);
 
 #ifdef HAVE_DEFRAG
 void zfree_no_tcache(void *ptr);
-__attribute__((malloc)) void *zmalloc_no_tcache(size_t size);
+ZMALLOC_ATTR_MALLOC void *zmalloc_no_tcache(size_t size);
 #endif
 
 #ifndef HAVE_MALLOC_SIZE
@@ -143,7 +164,11 @@ size_t zmalloc_usable_size(void *ptr);
  * The implementation returns the pointer as is; the only reason for its existence is as a conduit for the
  * alloc_size attribute. This cannot be a static inline because gcc then loses the attributes on the function.
  * See: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=96503 */
-__attribute__((alloc_size(2),noinline)) void *extend_to_usable(void *ptr, size_t size);
+#ifdef _MSC_VER
+ZMALLOC_ATTR_MALLOC void *extend_to_usable(void *ptr, size_t size);
+#else
+ZMALLOC_ATTR_ALLOC_SIZE(2) ZMALLOC_ATTR_NOINLINE void *extend_to_usable(void *ptr, size_t size);
+#endif
 #endif
 
 int get_proc_stat_ll(int i, long long *res);

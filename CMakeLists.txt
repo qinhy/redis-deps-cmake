@@ -12,6 +12,7 @@ cmake_policy(SET CMP0048 NEW)
 add_subdirectory(deps/hiredis)
 add_subdirectory(deps/linenoise)
 add_subdirectory(deps/jemalloc)
+add_subdirectory(deps/pthread-win32)
 
 # Set compile definitions for MSVC
 if(MSVC)
@@ -108,6 +109,7 @@ include_directories(
   ${LUA_INCLUDE_DIR}
   ${CMAKE_CURRENT_SOURCE_DIR}/deps/jemalloc/include
   ${CMAKE_CURRENT_SOURCE_DIR}/deps/jemalloc/include/msvc_compat
+  ${CMAKE_CURRENT_SOURCE_DIR}/deps/pthread-win32
 )
 
 if(REDIS_ENABLE_TLS)
@@ -157,8 +159,9 @@ if(WIN32)
 else()
   add_executable(redis-server ${REDIS_SRC})
 endif()
+
 target_compile_definitions(redis-server PRIVATE ${REDIS_COMMON_DEFINITIONS})
-target_link_libraries(redis-server ${REDIS_COMMON_LIBS} ${LUA_LIBRARY} jemalloc)
+target_link_libraries(redis-server ${REDIS_COMMON_LIBS} ${LUA_LIBRARY} jemalloc pthreadVC3 ws2_32)
 
 # --- Redis Benchmark ---
 if(REDIS_BUILD_BENCHMARK)

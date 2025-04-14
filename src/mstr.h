@@ -123,104 +123,209 @@
  *    are even in size.
  */
 
-#ifndef __MSTR_H
-#define __MSTR_H
+#ifndef MSTR_H
+#define MSTR_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #include <sys/types.h>
 #include <stdarg.h>
 #include <stdint.h>
 
-/* Selective copy of ifndef from server.h instead of including it */
+/* --------------------------------------------------------------------------
+ * Static Assert Support (for non-MSVC compilers)
+ * -------------------------------------------------------------------------- */
 #ifndef static_assert
-#define static_assert(expr, lit) extern char __static_assert_failure[(expr) ? 1:-1]
+  #if defined(_MSC_VER)
+    /* MSVC provides static_assert built-in */
+  #else
+    #define static_assert(expr, msg) extern char __static_assert_failure[(expr) ? 1 : -1]
+  #endif
 #endif
 
-#define MSTR_TYPE_5         0
-#define MSTR_TYPE_8         1
-#define MSTR_TYPE_16        2
-#define MSTR_TYPE_64        3
-#define MSTR_TYPE_MASK      3
-#define MSTR_TYPE_BITS      2
+/* --------------------------------------------------------------------------
+ * mstr Type Definitions and Macros
+ * -------------------------------------------------------------------------- */
 
-#define MSTR_META_MASK      4
-
-#define MSTR_HDR(T,s) ((struct mstrhdr##T *)((s)-(sizeof(struct mstrhdr##T))))
-#define MSTR_HDR_VAR(T,s) struct mstrhdr##T *sh = (void*)((s)-(sizeof(struct mstrhdr##T)));
-
-#define MSTR_META_BITS  1  /* is metadata attached? */
-#define MSTR_TYPE_5_LEN(f) ((f) >> (MSTR_TYPE_BITS + MSTR_META_BITS))
-#define CREATE_MSTR_INFO(len, ismeta, type) ( (((len<<MSTR_META_BITS) + ismeta) << (MSTR_TYPE_BITS)) | type )
-
-/* mimic plain c-string */
+/* mstr type is a plain C-string pointer, but the memory layout is preceded
+ * by a header and, optionally, metadata.
+ */
 typedef char *mstr;
+typedef uint16_t mstrFlags;   /* Flags to indicate attached metadata */
 
-/* Flags that can be set on mstring to indicate for attached metadata. It is
- * */
-typedef uint16_t mstrFlags;
+/* mstr header types:
+ * These constants define the header types used internally.
+ */
+#define MSTR_TYPE_5    0
+#define MSTR_TYPE_8    1
+#define MSTR_TYPE_16   2
+#define MSTR_TYPE_64   3
 
-struct __attribute__ ((__packed__)) mstrhdr5 {
-    unsigned char info; /* 2 lsb of type, 1 metadata, and 5 msb of string length */
-    char buf[];
-};
-struct __attribute__ ((__packed__)) mstrhdr8 {
-    uint8_t unused;  /* To achieve odd size header (See comment above) */
-    uint8_t len;
-    unsigned char info; /* 2 lsb of type, 6 unused bits */
-    char buf[];
-};
-struct __attribute__ ((__packed__)) mstrhdr16 {
-    uint16_t len;
-    unsigned char info; /* 2 lsb of type, 6 unused bits */
-    char buf[];
-};
-struct __attribute__ ((__packed__)) mstrhdr64 {
-    uint64_t len;
-    unsigned char info; /* 2 lsb of type, 6 unused bits */
-    char buf[];
-};
+#define MSTR_TYPE_MASK 3
+#define MSTR_TYPE_BITS 2
 
-#define NUM_MSTR_FLAGS (sizeof(mstrFlags)*8)
+#define MSTR_META_MASK 4  /* Flag mask for metadata presence */
 
-/* mstrKind is used to define a kind (a group) of mstring with its own metadata layout */
- typedef struct mstrKind {
+/* Macros to access the header from a given mstr */
+#define MSTR_HDR(T, s)     ((struct mstrhdr##T *)((s) - sizeof(struct mstrhdr##T)))
+#define MSTR_HDR_VAR(T, s) struct mstrhdr##T *sh = (void *)((s) - sizeof(struct mstrhdr##T))
+
+/* Metadata-related macros */
+#define MSTR_META_BITS     1  /* Boolean flag: is metadata attached? */
+#define MSTR_TYPE_5_LEN(f) ((f) >> (MSTR_TYPE_BITS + MSTR_META_BITS))
+#define CREATE_MSTR_INFO(len, ismeta, type) \
+    ((((len << MSTR_META_BITS) + (ismeta)) << MSTR_TYPE_BITS) | (type))
+
+/* --------------------------------------------------------------------------
+ * mstr Header Structures
+ * --------------------------------------------------------------------------
+ *
+ * These header structures precede the actual string data. The "unused" byte
+ * ensures the header size is odd, which maintains the invariant that mstr pointers
+ * are odd (an optimization used in Redis).
+ *
+ * Pack the structures to ensure no extra padding is added.
+ */
+#ifdef _MSC_VER
+#pragma pack(push, 1)
+#endif
+
+struct mstrhdr5 {
+    uint8_t  unused;   /* To achieve odd header size */
+    uint8_t  info;     /* Lower 2 bits: type, next bit: metadata flag,
+                          upper 5 bits: string length (msb) */
+    char     buf[1];   /* Flexible array member for string data */
+}
+#ifndef _MSC_VER
+__attribute__((packed))
+#endif
+;
+
+#ifdef _MSC_VER
+#pragma pack(pop)
+#endif
+
+#ifdef _MSC_VER
+#pragma pack(push, 1)
+#endif
+
+struct mstrhdr8 {
+    uint8_t  len;      /* String length */
+    uint8_t  info;     /* Lower 2 bits: type, 6 unused bits */
+    char     buf[1];   /* String data */
+}
+#ifndef _MSC_VER
+__attribute__((packed))
+#endif
+;
+
+#ifdef _MSC_VER
+#pragma pack(pop)
+#endif
+
+#ifdef _MSC_VER
+#pragma pack(push, 1)
+#endif
+
+struct mstrhdr16 {
+    uint8_t   unused;  /* To achieve odd header size */
+    uint16_t  len;     /* String length */
+    uint8_t   info;    /* Info field */
+    char      buf[1];  /* String data */
+}
+#ifndef _MSC_VER
+__attribute__((packed))
+#endif
+;
+
+struct mstrhdr64 {
+    uint8_t   unused;  /* To achieve odd header size */
+    uint64_t  len;     /* String length */
+    uint8_t   info;    /* Lower 2 bits: type, 6 unused bits */
+    char      buf[1];  /* String data */
+}
+#ifndef _MSC_VER
+__attribute__((packed))
+#endif
+;
+
+#ifdef _MSC_VER
+#pragma pack(pop)
+#endif
+
+/* --------------------------------------------------------------------------
+ * mstrKind Structure
+ * --------------------------------------------------------------------------
+ *
+ * Each mstrKind defines a particular metadata layout (for example, for hash-fields
+ * or future keyspace aggregates). The metaSize array specifies the size (in bytes)
+ * of each possible metadata field.
+ */
+#define NUM_MSTR_FLAGS (sizeof(mstrFlags) * 8)
+
+typedef struct mstrKind {
     const char *name;
     int metaSize[NUM_MSTR_FLAGS];
 } mstrKind;
 
+/* --------------------------------------------------------------------------
+ * Function Prototypes
+ * -------------------------------------------------------------------------- */
+
 mstr mstrNew(const char *initStr, size_t lenStr, int trymalloc);
+mstr mstrNewWithMeta(mstrKind *kind, const char *initStr, size_t lenStr,
+                      mstrFlags flags, int trymalloc);
+mstr mstrNewCopy(mstrKind *kind, mstr src, mstrFlags newFlags);
 
-mstr mstrNewWithMeta(struct mstrKind *kind, const char *initStr, size_t lenStr, mstrFlags flags, int trymalloc);
-
-mstr mstrNewCopy(struct mstrKind *kind, mstr src, mstrFlags newFlags);
-
-void *mstrGetAllocPtr(struct mstrKind *kind, mstr str);
-
-void mstrFree(struct mstrKind *kind, mstr s);
-
+void *mstrGetAllocPtr(mstrKind *kind, mstr str);
+void mstrFree(mstrKind *kind, mstr s);
 mstrFlags *mstrFlagsRef(mstr s);
-
-void *mstrMetaRef(mstr s, struct mstrKind *kind, int flagIdx);
+void *mstrMetaRef(mstr s, mstrKind *kind, int flagIdx);
 
 size_t mstrlen(const mstr s);
 
-/* return non-zero if metadata is attached to mstring */
-static inline int mstrIsMetaAttached(mstr s) { return s[-1] & MSTR_META_MASK; }
-
-/* return whether if a specific flag-index is set */
-static inline int mstrGetFlag(mstr s, int flagIdx) { return *mstrFlagsRef(s) & (1 << flagIdx); }
-
-/* DEBUG */
-void mstrPrint(mstr s, struct mstrKind *kind, int verbose);
-
-/* See comment above about MSTR-ALIGNMENT(2) */
-static_assert(sizeof(struct mstrhdr5 ) % 2 == 1, "must be odd");
-static_assert(sizeof(struct mstrhdr8 ) % 2 == 1, "must be odd");
-static_assert(sizeof(struct mstrhdr16 ) % 2 == 1, "must be odd");
-static_assert(sizeof(struct mstrhdr64 ) % 2 == 1, "must be odd");
-static_assert(sizeof(mstrFlags ) % 2 == 0, "must be even to keep mstr pointer odd");
+/* For debugging purposes */
+void mstrPrint(mstr s, mstrKind *kind, int verbose);
 
 #ifdef REDIS_TEST
 int mstrTest(int argc, char *argv[], int flags);
 #endif
 
+/* --------------------------------------------------------------------------
+ * Inline Functions for Metadata Handling
+ * --------------------------------------------------------------------------
+ */
+
+/* Check if metadata is attached to the mstr instance */
+static inline int mstrIsMetaAttached(mstr s) {
+    /* Access the header byte immediately preceding the string data */
+    unsigned char *p = (unsigned char *)s;
+    p--;
+    return (*p & MSTR_META_MASK);
+}
+
+/* Check if a specific metadata flag is set */
+static inline int mstrGetFlag(mstr s, int flagIdx) {
+    return *mstrFlagsRef(s) & (1 << flagIdx);
+}
+
+/* --------------------------------------------------------------------------
+ * Compile-Time Alignment Checks
+ * --------------------------------------------------------------------------
+ *
+ * Ensure that header sizes are odd (so the returned mstr pointer is odd)
+ * and that mstrFlags size is even.
+ */
+static_assert(sizeof(struct mstrhdr5) % 2 == 1, "mstrhdr5 size must be odd");
+static_assert(sizeof(struct mstrhdr8) % 2 == 1, "mstrhdr8 size must be odd");
+static_assert(sizeof(struct mstrhdr16) % 2 == 1, "mstrhdr16 size must be odd");
+static_assert(sizeof(struct mstrhdr64) % 2 == 1, "mstrhdr64 size must be odd");
+static_assert(sizeof(mstrFlags) % 2 == 0, "mstrFlags size must be even to maintain odd mstr pointers");
+
+#ifdef __cplusplus
+}
 #endif
+
+#endif /* MSTR_H */

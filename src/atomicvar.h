@@ -167,6 +167,37 @@
     oldvalue_var = __sync_val_compare_and_swap(&var,0,1)
 #define REDIS_ATOMIC_API "sync-builtin"
 
+#elif defined(_MSC_VER)
+/* Implementation using MSVC intrinsics */
+#include <intrin.h>
+
+#define atomicIncr(var,count) InterlockedAdd64((LONG64*)&var, (count))
+#define atomicGetIncr(var,oldvalue_var,count) do { \
+    oldvalue_var = InterlockedExchangeAdd64((LONG64*)&var, (count)); \
+} while(0)
+#define atomicIncrGet(var, newvalue_var, count) \
+    newvalue_var = InterlockedAdd64((LONG64*)&var, (count))
+#define atomicDecr(var,count) InterlockedAdd64((LONG64*)&var, -(count))
+#define atomicGet(var,dstvar) do { \
+    dstvar = InterlockedAdd64((LONG64*)&var, 0); \
+} while(0)
+#define atomicSet(var,value) do { \
+    InterlockedExchange64((LONG64*)&var, (value)); \
+} while(0)
+#define atomicGetWithSync(var,dstvar) do { \
+    _ReadWriteBarrier(); \
+    dstvar = InterlockedAdd64((LONG64*)&var, 0); \
+    _ReadWriteBarrier(); \
+} while(0)
+#define atomicSetWithSync(var,value) do { \
+    _ReadWriteBarrier(); \
+    InterlockedExchange64((LONG64*)&var, (value)); \
+    _ReadWriteBarrier(); \
+} while(0)
+#define atomicFlagGetSet(var,oldvalue_var) \
+    oldvalue_var = InterlockedExchange64((LONG64*)&var, 1)
+#define REDIS_ATOMIC_API "msvc-intrinsics"
+
 #else
 #error "Unable to determine atomic operations for your platform"
 

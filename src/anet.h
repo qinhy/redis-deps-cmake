@@ -12,6 +12,10 @@
 
 #include <sys/types.h>
 
+#ifdef _WIN32
+typedef int mode_t;
+#endif
+
 #define ANET_OK 0
 #define ANET_ERR -1
 #define ANET_ERR_LEN 256

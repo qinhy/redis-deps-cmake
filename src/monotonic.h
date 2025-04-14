@@ -13,7 +13,12 @@
 
 #include "fmacros.h"
 #include <stdint.h>
+
+#ifdef _WIN32
+#include "win32_unistd.h"
+#else
 #include <unistd.h>
+#endif
 
 /* A counter in micro-seconds.  The 'monotime' type is provided for variables
  * holding a monotonic time.  This will help distinguish & document that the

@@ -27,13 +27,33 @@
 #include <string.h>
 #include <time.h>
 #include <limits.h>
+#ifdef _WIN32
+#include "win32_unistd.h"
+#else
 #include <unistd.h>
+#endif
 #include <errno.h>
 #include <inttypes.h>
 #include <pthread.h>
+#ifdef _WIN32
+// Windows doesn't have syslog.h, define necessary constants
+#define LOG_EMERG       0       /* system is unusable */
+#define LOG_ALERT       1       /* action must be taken immediately */
+#define LOG_CRIT        2       /* critical conditions */
+#define LOG_ERR         3       /* error conditions */
+#define LOG_WARNING     4       /* warning conditions */
+#define LOG_NOTICE      5       /* normal but significant condition */
+#define LOG_INFO        6       /* informational */
+#define LOG_DEBUG       7       /* debug-level messages */
+
+// Windows networking includes
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#else
 #include <syslog.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
+#endif
 #include <lua.h>
 #include <signal.h>
 
